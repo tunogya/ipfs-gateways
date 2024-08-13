@@ -47,27 +47,31 @@ export const handler = async (event) => {
         }));
 
         const uploadId = createMultipartUploadResponse.UploadId;
-        const parts = [];
         const totalParts = Math.ceil(file.length / PART_SIZE);
+        const uploadPromises = [];
 
         for (let i = 0; i < totalParts; i++) {
           const start = i * PART_SIZE;
           const end = Math.min(start + PART_SIZE, file.length);
           const partBuffer = file.slice(start, end);
 
-          const uploadPartResponse = await s3Client.send(new UploadPartCommand({
-            Bucket: bucketName,
-            Key: key,
-            PartNumber: i + 1,
-            UploadId: uploadId,
-            Body: partBuffer,
-          }));
-
-          parts.push({
-            ETag: uploadPartResponse.ETag,
-            PartNumber: i + 1,
-          });
+          // Push the upload part promise into the array
+          uploadPromises.push(
+            s3Client.send(new UploadPartCommand({
+              Bucket: bucketName,
+              Key: key,
+              PartNumber: i + 1,
+              UploadId: uploadId,
+              Body: partBuffer,
+            })).then(uploadPartResponse => ({
+              ETag: uploadPartResponse.ETag,
+              PartNumber: i + 1,
+            }))
+          );
         }
+
+        // Wait for all parts to be uploaded
+        const parts = await Promise.all(uploadPromises);
 
         await s3Client.send(new CompleteMultipartUploadCommand({
           Bucket: bucketName,
