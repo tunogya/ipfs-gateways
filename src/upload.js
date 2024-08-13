@@ -2,7 +2,14 @@ import { CID } from 'multiformats/cid';
 import * as json from 'multiformats/codecs/json';
 import { sha256 } from 'multiformats/hashes/sha2';
 import s3Client from "./utils/s3Client.js";
-import {HeadObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
+import {
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
+
+const PART_SIZE = 5 * 1024 * 1024; // 5MB per part
 
 export const handler = async (event) => {
   try {
@@ -18,40 +25,63 @@ export const handler = async (event) => {
     const cid = CID.create(1, json.code, hash).toString();
 
     const contentType = event.headers['content-type'] || 'application/octet-stream';
+    const bucketName = process.env.S3_BUCKET_NAME || "nostrbucket";
+    const key = `ipfs/${cid}`;
 
     try {
       await s3Client.send(new HeadObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
-        Key: `ipfs/${cid}`,
+        Bucket: bucketName,
+        Key: key,
       }));
 
       return {
-        statusCode: 200,
+        statusCode: 409,
         body: JSON.stringify({ message: "File already exists.", uri: `ipfs://${cid}` }),
       };
     } catch (headError) {
       if (headError.name === 'NotFound') {
-        try {
-          await s3Client.send(new PutObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: `ipfs/${cid}`,
-            Body: file,
-            ContentType: contentType,
+        const createMultipartUploadResponse = await s3Client.send(new CreateMultipartUploadCommand({
+          Bucket: bucketName,
+          Key: key,
+          ContentType: contentType,
+        }));
+
+        const uploadId = createMultipartUploadResponse.UploadId;
+        const parts = [];
+        const totalParts = Math.ceil(file.length / PART_SIZE);
+
+        for (let i = 0; i < totalParts; i++) {
+          const start = i * PART_SIZE;
+          const end = Math.min(start + PART_SIZE, file.length);
+          const partBuffer = file.slice(start, end);
+
+          const uploadPartResponse = await s3Client.send(new UploadPartCommand({
+            Bucket: bucketName,
+            Key: key,
+            PartNumber: i + 1,
+            UploadId: uploadId,
+            Body: partBuffer,
           }));
 
-          return {
-            statusCode: 200,
-            body: JSON.stringify({
-              uri: `ipfs://${cid}`,
-            }),
-          };
-        } catch (s3Error) {
-          console.error("S3 Error:", s3Error);
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ error: "Failed to upload to S3." }),
-          };
+          parts.push({
+            ETag: uploadPartResponse.ETag,
+            PartNumber: i + 1,
+          });
         }
+
+        await s3Client.send(new CompleteMultipartUploadCommand({
+          Bucket: bucketName,
+          Key: key,
+          UploadId: uploadId,
+          MultipartUpload: { Parts: parts },
+        }));
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            uri: `ipfs://${cid}`,
+          }),
+        };
       } else {
         console.error("S3 HeadObject Error:", headError);
         return {
