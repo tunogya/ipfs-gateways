@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.629.0",
     "@ipld/dag-cbor": "^9.2.1",
     "multiformats": "^13.2.2"
   }
