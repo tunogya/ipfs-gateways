@@ -6,6 +6,8 @@ provider:
   deploymentMethod: direct
   region: ap-northeast-1
   runtime: nodejs20.x
+  environment:
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME}
   iam:
     role:
       managedPolicies:

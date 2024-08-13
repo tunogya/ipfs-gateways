@@ -1,20 +1,27 @@
-import { CID } from 'multiformats/cid'
-import * as json from 'multiformats/codecs/json'
-import { sha256 } from 'multiformats/hashes/sha2'
+import { CID } from 'multiformats/cid';
+import * as json from 'multiformats/codecs/json';
+import { sha256 } from 'multiformats/hashes/sha2';
 import s3Client from "./utils/s3Client.js";
-import {PutObjectCommand} from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const handler = async (event) => {
   try {
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "No file provided." }),
+      };
+    }
+
     const file = Buffer.from(event.body, 'base64');
     const hash = await sha256.digest(file);
     const cid = CID.create(1, json.code, hash).toString();
 
-    const contentType = event.headers['content-type'];
+    const contentType = event.headers['content-type'] || 'application/octet-stream';
 
     try {
       await s3Client.send(new PutObjectCommand({
-        Bucket: "nostrbucket",
+        Bucket: process.env.S3_BUCKET_NAME,
         Key: `ipfs/${cid}`,
         Body: file,
         ContentType: contentType,
@@ -23,21 +30,21 @@ export const handler = async (event) => {
       return {
         statusCode: 200,
         body: JSON.stringify({
-          uri: `ipfs://${cid}`
+          uri: `ipfs://${cid}`,
         }),
       };
-    } catch (e) {
-      console.log(e)
+    } catch (s3Error) {
+      console.error("S3 Error:", s3Error);
       return {
         statusCode: 500,
-        body: "Something went wrong.",
-      }
+        body: JSON.stringify({ error: "Failed to upload to S3." }),
+      };
     }
-  } catch (e) {
-      console.log(e);
-      return {
-        statusCode: 500,
-        body: "Something went wrong.",
-      }
+  } catch (error) {
+    console.error("Processing Error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "An error occurred during processing." }),
+    };
   }
 };
