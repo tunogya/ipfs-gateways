@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@ipld/dag-cbor": "^9.2.1",
+    "multiformats": "^13.2.2"
+  }
+}

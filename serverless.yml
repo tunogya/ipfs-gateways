@@ -1,0 +1,21 @@
+org: tunogya
+service: ipfs
+
+provider:
+  name: aws
+  deploymentMethod: direct
+  region: ap-northeast-1
+  runtime: nodejs20.x
+  iam:
+    role:
+      managedPolicies:
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
+functions:
+  upload:
+    name: ipfs-upload
+    handler: src/upload.handler
+    events:
+      - httpApi:
+          path: /
+          method: get
