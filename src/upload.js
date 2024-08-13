@@ -2,7 +2,7 @@ import { CID } from 'multiformats/cid';
 import * as json from 'multiformats/codecs/json';
 import { sha256 } from 'multiformats/hashes/sha2';
 import s3Client from "./utils/s3Client.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import {HeadObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 
 export const handler = async (event) => {
   try {
@@ -20,25 +20,45 @@ export const handler = async (event) => {
     const contentType = event.headers['content-type'] || 'application/octet-stream';
 
     try {
-      await s3Client.send(new PutObjectCommand({
+      await s3Client.send(new HeadObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `ipfs/${cid}`,
-        Body: file,
-        ContentType: contentType,
       }));
 
       return {
         statusCode: 200,
-        body: JSON.stringify({
-          uri: `ipfs://${cid}`,
-        }),
+        body: JSON.stringify({ message: "File already exists.", uri: `ipfs://${cid}` }),
       };
-    } catch (s3Error) {
-      console.error("S3 Error:", s3Error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Failed to upload to S3." }),
-      };
+    } catch (headError) {
+      if (headError.name === 'NotFound') {
+        try {
+          await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: `ipfs/${cid}`,
+            Body: file,
+            ContentType: contentType,
+          }));
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify({
+              uri: `ipfs://${cid}`,
+            }),
+          };
+        } catch (s3Error) {
+          console.error("S3 Error:", s3Error);
+          return {
+            statusCode: 500,
+            body: JSON.stringify({ error: "Failed to upload to S3." }),
+          };
+        }
+      } else {
+        console.error("S3 HeadObject Error:", headError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: "Failed to check file existence." }),
+        };
+      }
     }
   } catch (error) {
     console.error("Processing Error:", error);
