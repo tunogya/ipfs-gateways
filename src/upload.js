@@ -9,6 +9,8 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
+// Amazon API Gateway quotas and important notes
+// https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html
 const PART_SIZE = 5 * 1024 * 1024; // 5MB per part
 
 export const handler = async (event) => {
