@@ -11,7 +11,7 @@ import {
 
 // Amazon API Gateway quotas and important notes
 // https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html
-const PART_SIZE = 5 * 1024 * 1024; // 5MB per part
+const PART_SIZE = 2 * 1024 * 1024; // 2MB per part
 
 export const handler = async (event) => {
   try {
