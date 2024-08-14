@@ -1,4 +1,4 @@
-# IPFS on S3
+# IPFS Gateways
 
 ## Overview
 
