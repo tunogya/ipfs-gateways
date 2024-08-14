@@ -17,8 +17,8 @@ export const handler = async (event) => {
   try {
     if (!event.body) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "No file provided." }),
+        statusCode: 200,
+        body: JSON.stringify({ message: "POST some data for me." }),
       };
     }
 
