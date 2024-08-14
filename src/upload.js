@@ -36,7 +36,7 @@ export const handler = async (event) => {
 
       return {
         statusCode: 409,
-        body: JSON.stringify({ message: "File already exists.", uri: `ipfs://${cid}` }),
+        body: JSON.stringify({ message: "File already exists.", uri: `ipfs://${cid}`, httpUri: `https://ipfs.abandon.ai/ipfs/${cid}` }),
       };
     } catch (headError) {
       if (headError.name === 'NotFound') {
@@ -84,6 +84,7 @@ export const handler = async (event) => {
           statusCode: 200,
           body: JSON.stringify({
             uri: `ipfs://${cid}`,
+            httpUri: `https://ipfs.abandon.ai/ipfs/${cid}`,
           }),
         };
       } else {
