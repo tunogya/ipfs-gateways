@@ -21,6 +21,3 @@ functions:
       - httpApi:
           path: /
           method: post
-      - httpApi:
-          path: /
-          method: options
