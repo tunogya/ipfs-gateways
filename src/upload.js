@@ -1,5 +1,5 @@
 import { CID } from 'multiformats/cid';
-import * as raw from "multiformats/codecs/raw";
+import * as codec from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2';
 import s3Client from "./utils/s3Client.js";
 import {
@@ -24,7 +24,7 @@ export const handler = async (event) => {
 
     const file = Buffer.from(event.body, 'base64');
     const hash = await sha256.digest(file);
-    const cid = CID.create(1, raw.code, hash).toString();
+    const cid = CID.create(1, codec.code, hash).toString();
 
     const contentType = event.headers['content-type'] || 'application/octet-stream';
     const bucketName = process.env.S3_BUCKET_NAME || "nostrbucket";
