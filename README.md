@@ -59,7 +59,7 @@ This endpoint allows users to upload files.
 
 #### Request
 
-- **Content-Type**: `multipart/form-data`
+- **Content-Type**: ...
 - **Body**: The file to be uploaded.
 
 #### Response
