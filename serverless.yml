@@ -21,3 +21,10 @@ functions:
       - httpApi:
           path: /
           method: post
+  presigned:
+    name: s3-presigned
+    handler: src/presigned.handler
+    events:
+      - httpApi:
+          path: /presigned
+          method: post
