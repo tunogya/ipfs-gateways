@@ -15,7 +15,7 @@ export const handler = async (event) => {
         ContentType: contentType,
       });
     const presignedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600,
+      expiresIn: 60 * 5,
     });
 
     return {
