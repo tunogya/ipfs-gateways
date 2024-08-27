@@ -14,13 +14,6 @@ provider:
         - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 
 functions:
-  upload:
-    name: ipfs-upload
-    handler: src/upload.handler
-    events:
-      - httpApi:
-          path: /
-          method: post
   presigned:
     name: s3-presigned
     handler: src/presigned.handler
